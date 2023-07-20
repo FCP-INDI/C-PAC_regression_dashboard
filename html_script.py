@@ -2,9 +2,9 @@
 def dataset(name, data_source, value):
     dataset = f"""
         {{
-            "rowid": {name},
-            "columnid": {data_source},
-            "value": {value}
+            "rowid": "{name}",
+            "columnid": "{data_source}",
+            "value": "{value}"
         }},
             """
     return dataset
@@ -33,11 +33,11 @@ def write_html(all_keys, data_source):
         type: 'heatmap',
             renderAt: 'chart-container',
                 width: '100%',
-                    height: '350',
+                    height: '2000',
                         dataFormat: 'json',
                             dataSource: {{
             "chart": {{
-                "caption": "Top Smartphone Ratings",
+                "caption": "Regression Correlations",
                     "subcaption": "By Features",
                         "xAxisName": "Features",
                             "yAxisName": "Model",
@@ -65,18 +65,13 @@ def write_html(all_keys, data_source):
                                 "endlabel": "Good",
                                     "color": [{{
                                         "code": "E24B1A",
-                                        "minvalue": "1",
-                                        "maxvalue": "5",
+                                        "minvalue": "0",
+                                        "maxvalue": "0.979",
                                         "label": "Bad"
                                     }}, {{
-                                        "code": "F6BC33",
-                                        "minvalue": "5",
-                                        "maxvalue": "8.5",
-                                        "label": "Average"
-                                    }}, {{
                                         "code": "6DA81E",
-                                        "minvalue": "8.5",
-                                        "maxvalue": "10",
+                                        "minvalue": "0.98",
+                                        "maxvalue": "1.1",
                                         "label": "Good"
                                     }}]
             }}
