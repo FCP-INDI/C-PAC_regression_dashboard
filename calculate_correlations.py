@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from typing import Optional, NamedTuple, Tuple, Union
-from html_script import write_html, setup_browser
+from html_script import write_html, setup_browser, body
 
 import os
 import glob
@@ -9,6 +9,7 @@ import numpy as np
 import scipy
 from scipy import stats
 import pandas as pd
+import json
 
 from multiprocessing import Pool
 import itertools
@@ -805,8 +806,11 @@ def main():
                         help="file path of the script's input YAML")
     parser.add_argument("--data_source", type=str, 
                         help="Which site data comes from")
+    parser.add_argument("--branch", type=str, 
+                        help="Branch name")
     args = parser.parse_args()
     data_source = args.data_source
+    branch = args.branch
 
     # get the input info
     input_dct = read_yml_file(args.input_yaml)
@@ -829,18 +833,18 @@ def main():
     input_dct['settings'].update({'pickle_dir': pickle_dir})
 
     corr_map, pearson_map = compare_pipelines(input_dct, dir_type='output_dir')
-    #compare_pipelines(input_dct, dir_type='work_dir')
     corr_map_keys = list(corr_map.keys())
-    #corr_map_files = corr_map_keys.keys()
     all_keys = []
     for key in corr_map_keys:
         keys = list(corr_map[key])
         for i in keys: 
             all_keys.append(i)
-    return all_keys, data_source
+    return all_keys, data_source, branch
 
 
 if __name__ == "__main__":
-    all_keys, data_source = main()
-    html_body = write_html(all_keys, data_source)
-    setup_browser(html_body)
+    all_keys, data_source, branch = main()
+    html_body = body(all_keys, data_source)
+    file = open(f"{data_source}_{branch}.json","w")
+    file.write(html_body)
+    file.close()

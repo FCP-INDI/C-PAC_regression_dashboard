@@ -16,6 +16,12 @@ def body(all_keys, data_source):
         name = name_value[0]
         value = name_value[1]
         data_body += dataset(name, data_source, value)
+    data_body = (data_body.rstrip()).rstrip(",")
+    out = f"""
+        {{"data": [
+                {data_body}
+            ]}}
+            """
     return data_body
 
 def write_html(all_keys, data_source):
@@ -52,7 +58,7 @@ def write_html(all_keys, data_source):
                                                             "toolTipPadding": "5",
                                                                 "theme": "fusion"
             }},
-            "dataset": [{{
+            "dataset" : [{{
                 "data": [
                     {data_body}
                 ]
@@ -87,9 +93,7 @@ def write_html(all_keys, data_source):
         </body>
     </html>
     """
-    Func = open("GFG-2.html","w")
-    Func.write(script)
-    Func.close()
+
     return(script)
 
 def setup_browser(html_template):
