@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 
 from typing import Optional, NamedTuple, Tuple, Union
-from html_script import write_html, setup_browser, body
+from html_script import body
 
 import os
-import glob
 import numpy as np
-import scipy
-from scipy import stats
 import pandas as pd
-import json
 
 from multiprocessing import Pool
-import itertools
 
 Axis = Union[int, Tuple[int, ...]]
 

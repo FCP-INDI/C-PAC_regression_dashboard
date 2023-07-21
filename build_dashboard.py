@@ -1,3 +1,6 @@
+from html_script import write_html, setup_browser
+
+import os
 import click
 
 def process_option(ctx, param, value):
@@ -6,26 +9,29 @@ def process_option(ctx, param, value):
         return [val.strip() for val in values]
 
 @click.command()
-
-@click.option('--json_files','-o', required=True, 
+@click.option('--json_files', required=True, 
               callback=process_option, help='JSON files from correlations')
-@click.option('--data_source','-o', required=True, 
-              callback=process_option, help='data type')
-@click.option('--branch','-o', required=True, 
-              callback=process_option, help='branch name')
+@click.option('--branch', required=True, help='branch name')
 
-
-def main(json_files=None, data_source=None, branch=None):
+def main(json_files=None, branch=None):
     body = ''
+    data_source = []
     for json in json_files:
-            with open(f"{data_source}_{branch}.json") as user_file:
-                file_contents = user_file.read()
-                body += file_contents
-    return body
+        name = os.path.basename(json)
+        data = name.replace(f"_{branch}.json", '')
+        data_source.append(data)
+        with open(json) as user_file:
+            file_contents = user_file.read()
+            body += file_contents
+    body = (body.rstrip()).rstrip(",")
 
-if __name__ == "__main__":
-    all_keys, data_source, branch = main()
-    html_body = body(all_keys, data_source)
-    file = open(f"{data_source}_{branch}.json","w")
+    html_body = write_html(body)
+    file = open('html.html', 'w')
     file.write(html_body)
     file.close()
+    setup_browser(html_body)
+
+    return body, data_source, branch
+
+if __name__ == "__main__":
+    main()

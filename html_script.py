@@ -16,7 +16,6 @@ def body(all_keys, data_source):
         name = name_value[0]
         value = name_value[1]
         data_body += dataset(name, data_source, value)
-    data_body = (data_body.rstrip()).rstrip(",")
     out = f"""
         {{"data": [
                 {data_body}
@@ -24,8 +23,7 @@ def body(all_keys, data_source):
             """
     return data_body
 
-def write_html(all_keys, data_source):
-    data_body = body(all_keys, data_source)
+def write_html(data_body):
     script = \
     f"""
     <html>
@@ -89,7 +87,7 @@ def write_html(all_keys, data_source):
         </script>
         </head>
         <body>
-            <div id="chart-container">FusionCharts XT will load here!</div>
+            <div id="chart-container">Correlations heatmap will load here!</div>
         </body>
     </html>
     """
