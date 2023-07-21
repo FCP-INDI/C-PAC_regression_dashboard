@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from typing import Optional, NamedTuple, Tuple, Union
-from html_script import body
+from utils.html_script import body
 
 import os
 import numpy as np

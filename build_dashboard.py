@@ -1,4 +1,4 @@
-from html_script import write_html, setup_browser
+from utils.html_script import write_html, setup_browser
 
 import os
 import click
