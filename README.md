@@ -78,6 +78,11 @@ temp.html                                         Temporary HTML file that autom
                                                   If you exit browser, will need to build again.
 ```
 
+<b>Flowchart of Scripts</b>
+------------------------
+![image](https://github.com/amygutierrez/regression_dashboard/assets/58920810/37400c11-8a85-4f4d-a0ff-d9feae4b467e)
+
+
 <b>Dashboard Overview</b>
 ------------------------
 The dashboard is a heat map where value < 0.98 will be red and value ≥ 0.98 will be green. 
@@ -104,3 +109,6 @@ If you hover over each block, it will also highlight the file name, Site name, a
 GIF!
 ---
 ![dashboard](https://github.com/amygutierrez/regression_dashboard/assets/58920810/a3f06150-f660-4362-be31-d9fd0e122f36)
+
+
+
