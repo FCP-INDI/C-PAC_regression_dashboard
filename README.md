@@ -100,3 +100,7 @@ If you hover over each block, it will also highlight the file name, Site name, a
 
 <img width="1293" alt="Screen Shot 2023-07-24 at 9 56 27 PM" src="https://github.com/amygutierrez/regression_dashboard/assets/58920810/8e4fc6ea-15c2-404c-8a6f-ff763269c056">
 
+
+GIF!
+---
+![dashboard](https://github.com/amygutierrez/regression_dashboard/assets/58920810/a3f06150-f660-4362-be31-d9fd0e122f36)
