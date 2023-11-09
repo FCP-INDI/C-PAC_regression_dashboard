@@ -1,52 +1,65 @@
 #!/usr/bin/env python
-
-from typing import Optional, NamedTuple, Tuple, Union
-from utils.html_script import body
-
+import argparse
+from collections.abc import Generator
+import itertools
+import math
+from multiprocessing import Pool
 import os
+from pathlib import Path
+import pickle
+import subprocess
+from typing import Optional, NamedTuple, Tuple, Union
+import yaml
+
+import nibabel as nb
 import numpy as np
 import pandas as pd
 
-from multiprocessing import Pool
+from utils.html_script import body
 
 Axis = Union[int, Tuple[int, ...]]
 
+
 class CorrValue(NamedTuple):
+    """Correlation values"""
     concor: np.ndarray
     pearson: np.ndarray
 
+
 def read_yml_file(yml_filepath):
-    import yaml
     with open(yml_filepath,"r") as f:
         yml_dict = yaml.safe_load(f)
 
     return yml_dict
 
+
 def write_yml_file(yml_dict, out_filepath):
-    import yaml
     with open(out_filepath, "wt") as f:
         yaml.safe_dump(yml_dict, f)
 
+
 def read_pickle(pickle_file):
-    import pickle
     with open(pickle_file, "rb") as f:
         dct = pickle.load(f)
     return dct
 
+
 def write_pickle(dct, out_filepath):
-    import pickle
     with open(out_filepath, "wb") as f:
         pickle.dump(dct, f, protocol=pickle.HIGHEST_PROTOCOL)
+
 
 def read_txt_file(txt_file):
     with open(txt_file,"r") as f:
         strings = f.read().splitlines()
     return strings
 
+
 def write_txt_file(text_lines, out_filepath):
     with open(out_filepath, "wt") as f:
         for line in text_lines:
             f.write("{0}\n".format(line))
+
 
 def write_dct(dct=None, text_lines=None, outname=None):
     if not dct:
@@ -55,12 +68,13 @@ def write_dct(dct=None, text_lines=None, outname=None):
         dct.update({outname: text_lines})
     return dct
 
-def gather_local_filepaths(output_folder_path):
-    import os
+
+def gather_local_filepaths(output_folder_path: str) -> list[str]:
+    """Given a local path, return relevant paths within that directory"""
     filepaths = []
 
     print("Gathering file paths from {0}\n".format(output_folder_path))
-    for root, dirs, files in os.walk(output_folder_path):
+    for root, _dirs, files in os.walk(output_folder_path):
         # loops through every file in the directory
         for filename in files:
             # checks if the file is a nifti (.nii.gz)
@@ -69,10 +83,20 @@ def gather_local_filepaths(output_folder_path):
                 filepaths.append(os.path.join(root, filename))
 
     if len(filepaths) == 0:
-        err = "\n\n[!] No filepaths were found given the output folder!\n\n"
-        raise Exception(err)
+        raise FileNotFoundError(
+            "\n\n[!] No filepaths were found given the output folder!\n\n")
 
     return filepaths
+
+
+class SummaryStats:
+    def __init__(self, array: np.ndarray,
+                 axis: Optional[Union[int, str]] = None) -> None:
+        self.mean = np.mean(array, axis=axis, keepdims=True)
+        self.var = np.var(array, axis=axis, keepdims=True)
+        self.std = np.sqrt(self.var)
+        self.norm = (array - self.mean) / self.std
+
 
 def batch_correlate(
     x: np.ndarray, y: np.ndarray, axis: Optional[Axis] = None
@@ -84,54 +108,83 @@ def batch_correlate(
     References:
         https://en.wikipedia.org/wiki/Concordance_correlation_coefficient
     """
-    # Summary stats for x
-    x_mean = np.mean(x, axis=axis, keepdims=True)
-    x_var = np.var(x, axis=axis, keepdims=True)
-    x_std = np.sqrt(x_var)
-    # NOTE: Not trying to fix NaNs
-    x_norm = (x - x_mean) / x_std
-
-    # Summary stats for y
-    y_mean = np.mean(y, axis=axis, keepdims=True)
-    y_var = np.var(y, axis=axis, keepdims=True)
-    y_std = np.sqrt(y_var)
-    y_norm = (y - y_mean) / y_std
+    # summary stats
+    try:
+        summary_stats = {'x': SummaryStats(x), 'y': SummaryStats(y)}
+    except ZeroDivisionError:
+        return CorrValue(np.nan, np.nan)
 
     # Correlation coefficients
-    pearson = np.mean(x_norm * y_norm, axis=axis, keepdims=True)
-    concor = 2 * pearson * x_std * y_std / (x_var + y_var + (x_mean - y_mean) ** 2)
-
+    pearson = np.mean(summary_stats['x'].norm * summary_stats['y'].norm,
+                      axis=axis, keepdims=True)
+    concor = (2 * pearson * summary_stats['x'].std * summary_stats['y'].std /
+              (summary_stats['x'].var + summary_stats['y'].var +
+               (summary_stats['x'].mean - summary_stats['y'].mean) ** 2))
     # Squeeze reduced singleton dimensions
     if axis is not None:
         concor = np.squeeze(concor, axis=axis)
         pearson = np.squeeze(pearson, axis=axis)
     return CorrValue(concor, pearson)
 
-def correlate_text_based(txt1, txt2):
+
+def determine_indices(df : pd.DataFrame) -> list:
+    """Determine indices of str-type columns in a DataFrame"""
+    return [i for i, val in
+            enumerate(df.applymap(lambda _: isinstance(_, str)).values[0]) if
+            val]
+
+
+def correlate_text_based(txts: Union[list, tuple]) -> Generator:
+    delimiters = tuple(delimiter_from_filepath(path) for path in txts)
     # TODO: why do we drop columns containing na?
-    oned_one = pd.read_csv(txt1, delimiter=None, comment="#").dropna(axis=1).values
-    oned_two = pd.read_csv(txt2, delimiter=None, comment="#").dropna(axis=1).values
+    initial_load = [pd.read_csv(txt, delimiter=delimiters[i], comment='#'
+                               ).dropna(axis=1) for i, txt in enumerate(txts)]
+    for i, df in enumerate(initial_load):
+        # if we read a value-row as a header, fix that
+        try:
+            df.columns.astype(float)
+            initial_load[i] = pd.read_csv(txts[i], delimiter=delimiters[i],
+                                          comment='#', header=None
+                                         ).dropna(axis=1)
+        except ValueError:
+            pass
+    # assume string columns are indices and not values to correlate
+    indices = []
+    for i in range(len(initial_load)):
+        indices.append(np.where(df.apply(
+            lambda _: _.dtype == np.dtypes.ObjectDType))[0])
+    oned = []
+    for i, index in enumerate(indices):
+        if index.shape[0]:
+            oned.append(pd.read_csv(txts[i], delimiter=delimiters[i],
+                                    comment='#', index_col=indices[i]
+                                    ).dropna(axis=1).values)
+        else:
+            oned.append(initial_load[i].values)
+    return (np.nanmean(measure) for measure in batch_correlate(*oned, axis=0))
 
-    concor, pearson = batch_correlate(oned_one, oned_two, axis=0)
-    concor = np.nanmean(concor)
-    pearson = np.nanmean(pearson)
-    return concor, pearson
 
-def create_unique_file_dict(filepaths, output_folder_path, replacements=None):
+def create_unique_file_dict(filepaths: list[str], output_folder_path: str,
+                            replacements: Optional[list[str]] = None
+    ) -> dict[str, dict[tuple, str]]:
+    """
+    Parameters
+    ----------
+    filepaths : list of str
+      list of output filepaths from a CPAC output directory
+    output_folder_path : str
+      the CPAC output directory the filepaths are from
+    replacements : list of str, optional
+      a list of strings to be removed from the filepaths should
+      they occur
 
-    # filepaths:
-    #   list of output filepaths from a CPAC output directory
-    # output_folder_path:
-    #   the CPAC output directory the filepaths are from
-    # replacements:
-    #   (optional) a list of strings to be removed from the filepaths should
-    #   they occur
-
-    # output
-    #   files_dict
-    #     a dictionary of dictionaries, format:
-    #     files_dict["centrality"] = 
-    #         {("centrality", midpath, nums): <filepath>, ..}
+    Returns
+    -------
+    files_dict : dict
+        a dictionary of dictionaries, format:
+        files_dict["centrality"] = 
+            {("centrality", midpath, nums): <filepath>, ..}
+    """
 
     files_dict = {}
 
@@ -140,25 +193,25 @@ def create_unique_file_dict(filepaths, output_folder_path, replacements=None):
         if "_stack" in filepath:
             continue
 
-        if ("itk" in filepath) or ("xfm" in filepath) or ("montage" in filepath):
+        if ("itk" in filepath) or ("xfm" in filepath) or (
+            "montage" in filepath
+        ):
             continue
         path_changes = []
         real_filepath = filepath
         if replacements:
             for word_couple in replacements:
                 if "," not in word_couple:
-                    err = "\n\n[!] In the replacements text file, the old " \
-                          "substring and its replacement must be separated " \
-                          "by a comma.\n\n"
-                    raise Exception(err)
-                word = word_couple.split(",")[0]
-                new = word_couple.split(",")[1]
+                    raise SyntaxError(
+                        "\n\n[!] In the replacements text file, the old "
+                        "substring and its replacement must be separated "
+                        "by a comma.\n\n")
+                word, new = word_couple.split(",")
                 if word in filepath:
-                    path_changes.append("old: {0}".format(filepath))
+                    path_changes.append(f"old: {filepath}")
                     filepath = filepath.replace(word, new)
-                    path_changes.append("new: {0}".format(filepath))
+                    path_changes.append(f"new: {filepath}")
         if path_changes:
-            import os
             with open(os.path.join(os.getcwd(), "path_changes.txt"), "wt") as f:
                 for path in path_changes:
                     f.write(path)
@@ -231,11 +284,15 @@ def create_unique_file_dict(filepaths, output_folder_path, replacements=None):
     return files_dict
 
 
-def gather_all_files(input_dct, pickle_dir, source='output_dir'):
+def gather_all_files(input_dct: dict, pickle_dir: str,
+                     source: str = 'output_dir') -> tuple[dict, dict]:
+    """
+    Given an input dictionary, a pickle directory, and (optionally) a source,
+    returns a pair of dicts
+    """
+    file_dct_list = [{}, {}]
 
-    file_dct_list = []
-
-    for key, pipe_dct in input_dct['pipelines'].items():
+    for index, (key, pipe_dct) in enumerate(input_dct['pipelines'].items()):
 
         pipe_outdir = pipe_dct[source]
 
@@ -256,37 +313,42 @@ def gather_all_files(input_dct, pickle_dir, source='output_dir'):
         #          "and not a specific participant's output subdirectory either.)\n"
         #    raise Exception(err)
 
-        output_pkl = os.path.join(pickle_dir, "{0}_{1}_paths.p".format(key, source))
+        output_pkl = os.path.join(pickle_dir, f"{key}_{source}_paths.p")
 
         if os.path.exists(output_pkl):
-            print("Found output list pickle for {0}, skipping output file" \
-                  "path parsing..".format(key))
+            print(f"Found output list pickle for {key}, skipping output file"
+                  "path parsing..")
             pipeline_files_dct = read_pickle(output_pkl)
         else:
             pipeline_files_list = gather_local_filepaths(pipe_outdir)
-
-            pipeline_files_dct = create_unique_file_dict(pipeline_files_list,
-                                                         pipe_outdir,
-                                                         pipe_dct['replacements'])
-
+            pipeline_files_dct = create_unique_file_dict(
+                pipeline_files_list, pipe_outdir, pipe_dct['replacements'])
             write_pickle(pipeline_files_dct, output_pkl)
 
-        file_dct_list.append(pipeline_files_dct)
+        file_dct_list[index] = pipeline_files_dct
 
-    return (file_dct_list[0], file_dct_list[1])
+    return tuple(file_dct_list)
 
-def match_filepaths(old_files_dict, new_files_dict):
-    """Returns a dictionary mapping each filepath from the first CPAC run to the
-    second one, matched to derivative, strategy, and scan.
 
-    old_files_dict: each key is a derivative name, and each value is another
-                    dictionary keying (derivative, mid-path, last digit in path)
-                    tuples to a list containing the full filepath described by
-                    the tuple that is the key
-    new_files_dict: same as above, but for the second CPAC run
+def match_filepaths(old_files_dict: dict[str, dict[tuple, str]],
+                    new_files_dict: dict[str, dict[tuple, str]]
+                    ) -> dict[str, dict[tuple, ]]:
+    """Returns a dictionary mapping each filepath from the first C-PAC
+    run to the second one, matched to derivative, strategy, and scan.
 
-    matched_path_dict: same as the input dictionaries, except the list in the
-                       sub-dictionary value has both file paths that are matched
+    Parameters
+    ----------
+    old_files_dict, new_files_dict : dict
+        each key is a derivative name, and each value is another
+        dictionary keying (derivative, mid-path, last digit in path)
+        tuples to a list containing the full filepath described by
+        the tuple that is the key
+
+    Returns
+    -------
+    matched_path_dict : dict
+        same as the input dictionaries, except the list in the
+        sub-dictionary value has both file paths that are matched
     """
 
     # file path matching
@@ -330,16 +392,28 @@ def match_filepaths(old_files_dict, new_files_dict):
 
     return matched_files_dct
 
-def calculate_correlation(args_tuple):
 
-    import os
-    import subprocess
-    import nibabel as nb
-    import numpy as np
-    import scipy.stats.mstats
-    import scipy.stats
-    import math
-   
+def delimiter_from_filepath(filepath: Union[Path, str]) -> Optional[str]:
+    """
+    Given a filepath, return expected value-separator delimiter
+    """
+    if filepath.endswith('.tsv'):
+        return '\t'
+    if filepath.endswith('.csv'):
+        return ','
+    with open(filepath, 'r', encoding='utf8') as _f:
+        first_line = '#'
+        while first_line.lstrip().startswith('#'):
+            first_line = _f.readline()
+        for delimiter in ['\t', ',', ' ']:
+            if delimiter in first_line:
+                if delimiter == ' ':
+                    return r'\s+'
+                return delimiter
+    return None
+
+
+def calculate_correlation(args_tuple):  
     category = args_tuple[0]
     old_path = args_tuple[1]
     new_path = args_tuple[2]
@@ -400,46 +474,48 @@ def calculate_correlation(args_tuple):
     if os.path.exists(old_path) and os.path.exists(new_path):
 
         if ('.csv' in old_path and '.csv' in new_path) or \
-                ('spatial_map_timeseries.txt' in old_path and 'spatial_map_timeseries.txt' in new_path) or \
+                ('.txt' in old_path and '.txt' in new_path) or \
                     ('.1D' in old_path and '.1D' in new_path) or \
                         ('.tsv' in old_path and '.tsv' in new_path):
             try:
-                concor, pearson = correlate_text_based(old_path, new_path)
-
-                if concor > 0.980:
-                    corr_tuple = (category, [concor], [pearson])
-                else:
-                    corr_tuple = (category, [concor], [pearson], (old_path, new_path))
-                if verbose:
-                    print("Success - {0}".format(str(concor)))
-
+                concor, pearson = correlate_text_based((old_path, new_path))
             except Exception as e:
-                corr_tuple = ("file reading problem: {0}".format(e), 
-                              old_path, new_path)
-                if verbose:
-                    print(str(corr_tuple))
+                return category, e, (old_path, new_path)
+
+            if concor > 0.980:
+                corr_tuple = (category, [concor], [pearson])
+            else:
+                corr_tuple = (category, [concor], [pearson], (old_path, new_path))
+            if verbose:
+                print("Success - {0}".format(str(concor)))
+
+            # except Exception as e:
+            #     corr_tuple = ("file reading problem: {0}".format(e), 
+            #                   old_path, new_path)
+            #     if verbose:
+            #         print(str(corr_tuple))
 
             return corr_tuple
 
         else:
-            try:
-                old_file_img = nb.load(old_path)
-                old_file_hdr = old_file_img.header
-                new_file_img = nb.load(new_path)
-                new_file_hdr = new_file_img.header
+            # try:
+            old_file_img = nb.load(old_path)
+            old_file_hdr = old_file_img.header
+            new_file_img = nb.load(new_path)
+            new_file_hdr = new_file_img.header
 
-                old_file_dims = old_file_hdr.get_zooms()
-                new_file_dims = new_file_hdr.get_zooms()
+            old_file_dims = old_file_hdr.get_zooms()
+            new_file_dims = new_file_hdr.get_zooms()
 
-                data_1 = nb.load(old_path).get_fdata()
-                data_2 = nb.load(new_path).get_fdata()
+            data_1 = nb.load(old_path).get_fdata()
+            data_2 = nb.load(new_path).get_fdata()
 
-            except Exception as e:
-                corr_tuple = ("file reading problem: {0}".format(e), 
-                              old_path, new_path)
-                if verbose:
-                    print(str(corr_tuple))
-                return corr_tuple
+            # except Exception as e:
+            #     corr_tuple = ("file reading problem: {0}".format(e), 
+            #                   old_path, new_path)
+            #     if verbose:
+            #         print(str(corr_tuple))
+            #     return corr_tuple
 
         ## set up and run the Pearson correlation and concordance correlation
         if data_1.flatten().shape == data_2.flatten().shape:
@@ -484,6 +560,7 @@ def calculate_correlation(args_tuple):
                     print(str(corr_tuple))
 
     return corr_tuple
+
 
 def run_correlations(matched_dct, input_dct, source='output_dir', quick=False, verbose=False):
 
@@ -540,8 +617,14 @@ def run_correlations(matched_dct, input_dct, source='output_dir', quick=False, v
 
     print("\nCorrelations of the {0} are done.\n".format(source))
 
+    failures = []
+
     for corr_tuple in corr_tuple_list:
         if not corr_tuple:
+            continue
+        if isinstance(corr_tuple[1], Exception):
+            failures.append((corr_tuple[0], corr_tuple[1],
+                             ' | '.join(corr_tuple[2])))
             continue
         if corr_tuple[0] not in all_corr_dct['concordance'].keys():
             all_corr_dct['concordance'][corr_tuple[0]] = []
@@ -561,7 +644,8 @@ def run_correlations(matched_dct, input_dct, source='output_dir', quick=False, v
             except TypeError:
                 pass
 
-    return all_corr_dct
+    return all_corr_dct, failures
+
 
 def post180_organize_correlations(concor_dct, corr_type="concordance", quick=False):
 
@@ -694,11 +778,14 @@ def organize_correlations(concor_dict, corr_type="concordance", quick=False):
 
     return corr_map_dict
 
-def quick_summary(dct, corr_map_dct, output_dir):
+
+def quick_summary(dct, corr_map_dct, output_dir) -> dict:
     for corr_group in corr_map_dct["correlations"].keys():
         cat_dct = {}
         lines = []
-        for output_type, corr_vec in dict(corr_map_dct["correlations"][corr_group]).items():
+        for output_type, corr_vec in dict(
+            corr_map_dct["correlations"][corr_group]
+        ).items():
             try:
                 corrmean = np.mean(np.asarray(corr_vec))
             except TypeError:
@@ -708,39 +795,51 @@ def quick_summary(dct, corr_map_dct, output_dir):
         dct = write_dct(dct, lines, output_type)
     return(dct)
 
-def compare_pipelines(input_dct, dir_type='output_dir'):
 
+def compare_pipelines(input_dct: dict,
+                      dir_type: str = 'output_dir') -> tuple[dict, dict]:
+    """
+    Given an input dict containing keys 'settings', gather prreviously
+    generated pickles or all relevant output and working files
+    
+    Returns
+    -------
+    corr_map : dict
+    
+    pearson_map : dict
+    """
     output_dir = input_dct['settings']['output_dir']
     pickle_dir = input_dct['settings']['pickle_dir']
 
-    corrs_pkl = os.path.join(pickle_dir, "{0}_correlations.p".format(dir_type))
-    matched_pkl = os.path.join(pickle_dir, "{0}_matched_files.p".format(dir_type))
-    
+    corrs_pkl = os.path.join(pickle_dir, f"{dir_type}_correlations.p")
+    failures_pkl = os.path.join(pickle_dir, f"{dir_type}_failures.p")
+    matched_pkl = os.path.join(pickle_dir, f"{dir_type}_matched_files.p")
+
     all_corr_dct = None
     if os.path.exists(corrs_pkl):
-        print("\n\nFound the correlations pickle: {0}\n\n"
-              "Starting from there..\n".format(corrs_pkl))
+        print(f"\n\nFound the correlations pickle: {corrs_pkl}\n\n"
+              "Starting from there..\n")
         all_corr_dct = read_pickle(corrs_pkl)
     elif os.path.exists(matched_pkl):
-        print("\n\nFound the matched filepaths pickle: {0}\n\n"
-              "Starting from there..\n".format(matched_pkl))
+        print(f"\n\nFound the matched filepaths pickle: {matched_pkl}\n\n"
+              "Starting from there..\n")
         matched_dct = read_pickle(matched_pkl)
 
     else:
         # gather all relevant output and working files
         outfiles1_dct, outfiles2_dct = gather_all_files(input_dct, pickle_dir, 
                                                         source=dir_type)
-        
         matched_dct = match_filepaths(outfiles1_dct, outfiles2_dct)
         write_pickle(matched_dct, matched_pkl)
 
     if not all_corr_dct:
-        all_corr_dct = run_correlations(matched_dct,
+        all_corr_dct, failures = run_correlations(matched_dct,
                                         input_dct, 
                                         source=dir_type,
                                         quick=input_dct['settings']['quick'],
                                         verbose=input_dct['settings']['verbose'])
         write_pickle(all_corr_dct, corrs_pkl)
+        write_pickle(failures, failures_pkl)
     
     if dir_type == 'work_dir':
         sorted_vals = []
@@ -788,14 +887,13 @@ def compare_pipelines(input_dct, dir_type='output_dir'):
         #                   pearson_map_dict["pipeline_names"], output_dir)
         return(corr_map, pearson_map)
 
-def main():
 
-    import os
-    import argparse
-
-    from multiprocessing import Pool
-    import itertools
-
+def main() -> tuple:
+    """
+    • Parse commandline arguments
+    • Read input YAML
+    • Check for already completed stuff (pickles)
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("input_yaml", type=str, 
                         help="file path of the script's input YAML")
@@ -811,8 +909,8 @@ def main():
     input_dct = read_yml_file(args.input_yaml)
 
     # check for already completed stuff (pickles)
-    output_dir = os.path.join(os.getcwd(), 
-                              "correlations_{0}".format(input_dct['settings']['run_name']))
+    output_dir = os.path.join(
+        os.getcwd(), f"correlations_{input_dct['settings']['run_name']}")
     pickle_dir = os.path.join(output_dir, "pickles")
 
     if not os.path.exists(pickle_dir):
@@ -821,11 +919,11 @@ def main():
         except:
             err = "\n\n[!] Could not create the output directory for the " \
                   "correlations. Do you have write permissions?\nAttempted " \
-                  "output directory: {0}\n\n".format(output_dir)
+                  f"output directory: {output_dir}\n\n"
             raise Exception(err)
 
-    input_dct['settings'].update({'output_dir': output_dir})
-    input_dct['settings'].update({'pickle_dir': pickle_dir})
+    input_dct['settings'].update({'output_dir': output_dir,
+                                  'pickle_dir': pickle_dir})
 
     corr_map, pearson_map = compare_pipelines(input_dct, dir_type='output_dir')
     corr_map_keys = list(corr_map.keys())
@@ -840,6 +938,5 @@ def main():
 if __name__ == "__main__":
     all_keys, data_source, branch = main()
     html_body = body(all_keys, data_source)
-    file = open(f"{data_source}_{branch}.json","w")
-    file.write(html_body)
-    file.close()
+    with open(f"{data_source}_{branch}.json", "w") as file:
+        file.write(html_body)
