@@ -1,4 +1,3 @@
-
 def dataset(name, data_source, value):
     dataset = f"""
         {{
@@ -9,10 +8,11 @@ def dataset(name, data_source, value):
             """
     return dataset
 
+
 def body(all_keys, data_source):
-    data_body = ''
+    data_body = ""
     for key in all_keys:
-        name_value = key.split(': ')
+        name_value = key.split(": ")
         name = name_value[0]
         value = name_value[1]
         data_body += dataset(name, data_source, value)
@@ -23,9 +23,9 @@ def body(all_keys, data_source):
             """
     return data_body
 
+
 def write_html(data_body):
-    script = \
-    f"""
+    script = f"""
     <html>
     <head>
         <title>Correlations</title>
@@ -92,15 +92,16 @@ def write_html(data_body):
     </html>
     """
 
-    return(script)
+    return script
+
 
 def setup_browser(html_template):
     import tempfile
     import webbrowser
 
-    with tempfile.NamedTemporaryFile(suffix='.html', delete=False) as temp_file:
-        temp_file.write(html_template.encode('utf-8'))
-        filename = 'file:///'+ temp_file.name
+    with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as temp_file:
+        temp_file.write(html_template.encode("utf-8"))
+        filename = "file:///" + temp_file.name
         webbrowser.open_new_tab(filename)
-    
+
     return
