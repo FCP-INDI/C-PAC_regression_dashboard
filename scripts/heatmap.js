@@ -71,6 +71,38 @@ datasource.then(function(data) {
     .style("border-radius", "5px")
     .style("padding", "5px");
 
+  // Adjust the x-coordinate for the squares
+  svg.selectAll()
+  .data(data, function(d) {return d.columnid + ':' + d.variable;})
+  .enter()
+  .append("rect")
+    .attr("x", function(d) { return width - x(d.columnid); }) // Updated x-coordinate
+    .attr("y", function(d) { return y(d.rowid); })
+    .attr("rx", 4)
+    .attr("ry", 4)
+    .attr("width", y.bandwidth())
+    .attr("height", y.bandwidth())
+    .style("fill", function(d) { return myColor(d.value); })
+    .style("stroke-width", 0)
+    .style("stroke", "none")
+    .style("opacity", 0.8)
+  .on("mouseover", mouseover)
+  .on("mousemove", mousemove)
+  .on("mouseleave", mouseleave);
+
+  // Adjust the x-axis
+  svg.append("g")
+  .style("font-size", 15)
+  .attr("transform", "translate(0,0)")
+  .call(d3.axisTop(x).tickSize(0))
+  .select(".domain").remove();
+
+  // Reposition the y-axis
+  svg.append("g")
+  .style("font-size", 15)
+  .call(d3.axisLeft(y).tickSize(0))
+  .select(".domain").remove();
+
   // Three functions that change the tooltip when user hovers / moves / leaves a cell
   var mouseover = function(d) {
     tooltip
@@ -121,7 +153,7 @@ svg.append("text")
   .attr("y", -50)
   .attr("text-anchor", "left")
   .style("font-size", "22px")
-  .text("GRAPHTITLE");
+  .text("C-PAC regression test correlations");
 
 // Add subtitle to graph
 svg.append("text")
@@ -131,4 +163,4 @@ svg.append("text")
   .style("font-size", "14px")
   .style("fill", "grey")
   .style("max-width", 400)
-  .text("GRAPHSUBTITLE");
+  .text(dataSha);
