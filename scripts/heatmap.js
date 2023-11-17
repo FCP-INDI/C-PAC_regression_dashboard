@@ -14,7 +14,15 @@ var svg = d3.select("#heatmap-container")
           "translate(" + margin.left + "," + margin.top + ")");
 
 //Read the data
-datasource = d3.json("DATAFILE");
+const urlParams = new URLSearchParams(window.location.search);
+const dataSha = urlParams.get('data_sha');
+// Get the current page URL
+const currentUrl = window.location.href;
+// Extract the 'owner' part from the GitHub Pages URL
+const matches = currentUrl.match(/^https:\/\/([^\.]+)\.github\.io\/([^\/]+)/);
+const owner = (matches && matches.length === 3) ? matches[1] : 'FCP-INDI';
+const dataUrl = `https://raw.githubusercontent.com/${owner}/regtest-runlogs/C-PAC_${dataSha}/correlations.json`
+datasource = d3.json(dataUrl);
 datasource.then(function(data) {
 
   data.sort(function(a, b) { return d3.descending(a.rowid, b.rowid) });
