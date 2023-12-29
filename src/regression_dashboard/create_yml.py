@@ -2,7 +2,7 @@ import os
 
 import click
 
-from utils.parse_yaml import cpac_yaml
+from .utils.parse_yaml import cpac_yaml
 
 
 @click.command()
@@ -21,14 +21,9 @@ from utils.parse_yaml import cpac_yaml
 @click.option("--workspace", type=str, help="directory to save correlations")
 @click.option("--branch", type=str, help="branch name")
 @click.option("--data_source", type=str, help="Data site")
-def main(pipeline1, pipeline2, workspace, branch, data_source):
-    """
-    Correlate outputs from regression run again another C-PAC version.
-    """
-
-    git_home = os.path.normpath(
-        os.path.dirname(os.path.abspath(__file__)) + os.sep + os.pardir
-    )
+def main(pipeline1, pipeline2, workspace, branch, data_source) -> None:
+    """Correlate outputs from regression run again another C-PAC version."""
+    os.path.normpath(os.path.dirname(os.path.abspath(__file__)) + os.sep + os.pardir)
     run_name = f"{branch}_{data_source}"
 
     cpac_yaml(
@@ -40,8 +35,6 @@ def main(pipeline1, pipeline2, workspace, branch, data_source):
         branch,
         data_source,
     )
-
-    return
 
 
 if __name__ == "__main__":

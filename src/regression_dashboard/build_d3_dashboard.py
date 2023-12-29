@@ -18,7 +18,7 @@ def main(json_file=None, branch=None):
         body = etree.HTML(_f.read())
     script_element = etree.SubElement(body[0], "script")
     script_element.set("defer", "defer")
-    script_element.set("src", f"./heatmap.js")
+    script_element.set("src", "./heatmap.js")
     with open("templates/heatmap.js", "r", encoding="utf-8") as _f:
         with open(f"{outdir}/heatmap.js", "w", encoding="utf=8") as _s:
             _s.write(

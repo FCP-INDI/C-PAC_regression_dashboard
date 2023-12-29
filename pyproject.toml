@@ -1,0 +1,81 @@
+[tool.poetry]
+name = "cpac_regression_dashboard"
+version = "1.0.0"
+description = "Generate a dashboard for C-PAC regression tests"
+authors = [
+  "Amy Gutierrez <58920810+amygutierrez@users.noreply.github.com>",
+  "Jon Clucas <jon.clucas@childmind.org"
+]
+license = "LGPL-2.1"
+readme = "README.md"
+packages = [{include = "regression_dashboard", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.9"
+cpac-correlations = {git = "https://github.com/FCP-INDI/CPAC_regtest_pack.git", rev = "package_correlations", subdirectory = "cpac_correlations"}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+mypy = "^1.7.1"
+pre-commit = "^3.5.0"
+pytest-cov = "^4.1.0"
+ruff = "^0.1.7"
+
+[tool.poetry.scripts]
+cpac_regsuite_create_yaml = 'regression_dashboard.create_yml:main'
+cpac_regsuite_create_yml = 'regression_dashboard.create_yml:main'
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src"
+]
+
+[tool.ruff]
+extend-select = ["A", "C4", "D", "G", "I", "ICN", "NPY", "PL", "RET", "RSE", "RUF", "Q", "W"]
+line-length = 88
+indent-width = 4
+src = ["src"]
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["ANN", "D", "E", "F", "I"]
+ignore = [
+  "ANN101",  # self should not be annotated.
+  "ANN102"  # cls should not be annotated.
+]
+fixable = ["ALL"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+known-first-party = ["cpac-correlations"]
+no-lines-before = ["local-folder"]
+order-by-type = false
+
+[tool.ruff.lint.pylint]
+max-args = 10
+max-branches = 50
+max-returns = 12
+max-statements = 100
+
+[tool.ruff.lint.pyupgrade]
+# Until variants Python ≥ 3.10
+keep-runtime-typing = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.per-file-ignores]
+"tests/**/*.py" = []
+
+[build-system]
+requires = ["poetry-core>=1.2.0"]
+build-backend = "poetry.core.masonry.api"

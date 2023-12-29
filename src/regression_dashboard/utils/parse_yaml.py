@@ -8,9 +8,9 @@ def get_dir(paths):
         directory = None
     else:
         for root, dirs, files in os.walk(paths):
-            for dir in dirs:
-                if "pipeline_" in dir:
-                    directory = os.path.join(root, dir)
+            for _dir in dirs:
+                if "pipeline_" in _dir:
+                    directory = os.path.join(root, _dir)
     return directory
 
 
@@ -21,7 +21,7 @@ def write_pipeline_yaml(
     pipeline_config=None,
     pipeline_name=None,
 ):
-    pipeline = {
+    return {
         pipeline_name: {
             "output_dir": output_dir,
             "work_dir": working_dir,
@@ -30,8 +30,6 @@ def write_pipeline_yaml(
             "replacements": None,
         }
     }
-
-    return pipeline
 
 
 def parse_yaml(directory=None, pipeline_name=None):
@@ -54,11 +52,9 @@ def parse_yaml(directory=None, pipeline_name=None):
     working_dir = get_dir(paths["working_dir"])
     output_dir = get_dir(paths["output_dir"])
 
-    pipeline_dict = write_pipeline_yaml(
+    return write_pipeline_yaml(
         output_dir, working_dir, log_dir, pipeline_config, pipeline_name
     )
-
-    return pipeline_dict
 
 
 def write_yaml(
@@ -81,7 +77,7 @@ def write_yaml(
 
 def cpac_yaml(
     pipeline1, pipeline2, correlations_dir, run_name, n_cpus, branch, data_source
-):
+) -> None:
     pipeline_1 = parse_yaml(pipeline1, "pipeline_1")
     pipeline_2 = parse_yaml(pipeline2, "pipeline_2")
 
@@ -91,5 +87,3 @@ def cpac_yaml(
 
     with open(f"{branch}_{data_source}.yml", "w") as file:
         yaml.dump(yaml_contents, file, default_flow_style=False, sort_keys=False)
-
-    return
