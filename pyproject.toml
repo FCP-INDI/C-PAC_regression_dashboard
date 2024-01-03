@@ -12,6 +12,7 @@ packages = [{include = "regression_dashboard", from = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9"
+PyGithub = "*"
 cpac-correlations = {git = "https://github.com/FCP-INDI/CPAC_regtest_pack.git", rev = "package_correlations", subdirectory = "cpac_correlations"}
 
 [tool.poetry.group.dev.dependencies]
@@ -24,6 +25,7 @@ ruff = "^0.1.7"
 [tool.poetry.scripts]
 cpac_regsuite_create_yaml = 'regression_dashboard.create_yml:main'
 cpac_regsuite_create_yml = 'regression_dashboard.create_yml:main'
+cpac_regsuite_generate_comment = 'regression_dashboard.generate_comment:main'
 
 [tool.pytest.ini_options]
 pythonpath = [
