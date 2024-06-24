@@ -16,7 +16,7 @@ cairosvg = "*"
 gitpython = "*"
 PyGithub = "*"
 pyppeteer = "*"
-cpac-correlations = {git = "https://github.com/FCP-INDI/CPAC_regtest_pack.git", rev = "package_correlations", subdirectory = "cpac_correlations"}
+cpac-correlations = {git = "https://github.com/FCP-INDI/CPAC_regtest_pack.git", subdirectory = "cpac_correlations"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
