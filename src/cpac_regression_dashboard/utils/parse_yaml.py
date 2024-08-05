@@ -1,5 +1,6 @@
 """From a pair of CPAC output directories, write a YAML file for regression."""
 import os
+from pathlib import Path
 from typing import Optional, Union
 
 import yaml
@@ -100,14 +101,17 @@ def cpac_yaml(
     n_cpus: int,
     branch: str,
     data_source: str,
-) -> None:
+) -> Path:
     """Write a YAML file for the regression run."""
-    pipeline_1 = parse_yaml(pipeline1, "pipeline_1")
-    pipeline_2 = parse_yaml(pipeline2, "pipeline_2")
+    pipeline_1: _PIPELINE_DICT = parse_yaml(pipeline1, "pipeline_1")
+    pipeline_2: _PIPELINE_DICT = parse_yaml(pipeline2, "pipeline_2")
 
-    yaml_contents = write_yaml(
+    yaml_contents: _FULL_YAML_DICT = write_yaml(
         pipeline_1, pipeline_2, correlations_dir, run_name, n_cpus
     )
 
-    with open(f"{branch}_{data_source}.yml", "w") as file:
+    yaml_path: Path = Path(f"{branch}_{data_source}.yml")
+    """Path to YAML file for regression correlation."""
+    with yaml_path.open("w") as file:
         yaml.dump(yaml_contents, file, default_flow_style=False, sort_keys=False)
+    return yaml_path
