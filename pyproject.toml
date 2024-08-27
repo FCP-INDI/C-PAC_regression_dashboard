@@ -26,7 +26,7 @@ pytest-cov = "^4.1.0"
 ruff = "^0.1.7"
 
 [tool.poetry.scripts]
-cpac_regsuite_correlate = 'cpac_regression_dashboard.cpac_correlations:main'
+cpac_regsuite_correlate = 'cpac_regression_dashboard.calculate_correlations:main'
 cpac_regsuite_create_yaml = 'cpac_regression_dashboard.create_yml:main'
 cpac_regsuite_create_yml = 'cpac_regression_dashboard.create_yml:main'
 cpac_regsuite_generate_comment = 'cpac_regression_dashboard.generate_comment:main'
