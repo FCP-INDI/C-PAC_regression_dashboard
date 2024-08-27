@@ -1,14 +1,12 @@
 """From a pair of CPAC output directories, write a YAML file for regression."""
 import os
 from pathlib import Path
-from typing import Optional, Union
+from typing import cast, Optional
 
 import yaml
 
-_PIPELINE_DICT = dict[Optional[str], dict[str, Optional[Union[str, int]]]]
-_FULL_YAML_DICT = dict[
-    str, Union[dict[str, Union[bool, int, Optional[str]]], _PIPELINE_DICT]
-]
+_PIPELINE_DICT = dict[Optional[str], dict[str, Optional[int | str]]]
+_FULL_YAML_DICT = dict[str, dict[str, bool | int | Optional[str]] | _PIPELINE_DICT]
 
 
 def get_dir(paths: str) -> Optional[str]:
@@ -72,20 +70,23 @@ def parse_yaml(directory: str, pipeline_name: str) -> _PIPELINE_DICT:
 def write_yaml(
     pipeline_1: _PIPELINE_DICT,
     pipeline_2: _PIPELINE_DICT,
-    correlations_dir: Optional[str] = None,
-    run_name: Optional[str] = None,
-    n_cpus: Optional[int] = None,
+    correlations_dir: str,
+    run_name: str,
+    n_cpus: int = 1,
 ) -> _FULL_YAML_DICT:
     """Combine settings and both pipelines into a single dictionary."""
     yaml_dict: _FULL_YAML_DICT = {}
-    yaml_dict["settings"] = {
-        "n_cpus": n_cpus,
-        "correlations_dir": correlations_dir,
-        "run_name": run_name,
-        "s3_creds": None,
-        "quick": False,
-        "verbose": False,
-    }
+    yaml_dict["settings"] = cast(
+        dict[str, bool | int | Optional[str]] | _PIPELINE_DICT,
+        {
+            "n_cpus": int(n_cpus),
+            "correlations_dir": correlations_dir,
+            "run_name": run_name,
+            "s3_creds": None,
+            "quick": False,
+            "verbose": False,
+        },
+    )
 
     yaml_dict["pipelines"] = {**pipeline_1, **pipeline_2}
 
