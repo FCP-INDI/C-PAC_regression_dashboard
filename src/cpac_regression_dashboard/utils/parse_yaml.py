@@ -13,9 +13,8 @@ _FULL_YAML_DICT = dict[
 
 def get_dir(paths: str) -> Optional[str]:
     """Get the full path to a ``pipeline_*`` directory."""
-    if not paths:
-        directory = None
-    else:
+    directory = paths
+    if directory:
         for root, dirs, files in os.walk(paths):
             for _dir in dirs:
                 if "pipeline_" in _dir:
