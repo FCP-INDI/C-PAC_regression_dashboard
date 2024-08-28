@@ -1,4 +1,4 @@
-def dataset(name, data_source, value) -> str:
+def dataset(name: str, data_source: str, value: float | int | str) -> str:
     return f"""
         {{
             "rowid": "{name}",
@@ -8,13 +8,14 @@ def dataset(name, data_source, value) -> str:
             """
 
 
-def body(all_keys, data_source):
-    data_body = ""
+def body(all_keys: list[str], data_source: str) -> str:
+    data_body: str = "["
     for key in all_keys:
         name_value = key.split(": ")
         name = name_value[0]
         value = name_value[1]
         data_body += dataset(name, data_source, value)
+    data_body += "]"
     return data_body
 
 
