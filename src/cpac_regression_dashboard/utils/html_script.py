@@ -1,3 +1,6 @@
+import json
+
+
 def dataset(name: str, data_source: str, value: float | int | str) -> str:
     return f"""
         {{
@@ -15,8 +18,9 @@ def body(all_keys: list[str], data_source: str) -> str:
         name = name_value[0]
         value = name_value[1]
         data_body += dataset(name, data_source, value)
+    data_body = data_body.strip()
     data_body += "]"
-    return data_body
+    return json.dumps(json.loads(data_body))
 
 
 def write_html(data_body) -> str:
