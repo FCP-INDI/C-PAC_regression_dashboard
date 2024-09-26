@@ -20,7 +20,7 @@ const dataSha = urlParams.get("data_sha");
 const currentUrl = window.location.href;
 // Extract the 'owner' part from the GitHub Pages URL
 const matches = currentUrl.match(/^https:\/\/([^\.]+)\.github\.io\/([^\/]+)/);
-const owner = matches && matches.length === 3 ? matches[1] : "shnizzedy"; // 'FCP-INDI';
+const owner = matches && matches.length === 3 ? matches[1] : "FCP-INDI";
 const dataUrl = `https://raw.githubusercontent.com/${owner}/regtest-runlogs/C-PAC_${dataSha}/correlations.json`;
 datasource = d3.json(dataUrl);
 datasource.then(function (data) {
@@ -32,18 +32,21 @@ datasource.then(function (data) {
   var myGroups = Array.from(groupedData.keys());
   var myVars = Array.from(d3.group(data, (d) => d.rowid).keys());
 
-  // Build X scales and axis:
-  var x = d3
-    .scaleBand()
-    .domain(myGroups)
-    .range([0, myGroups.length]) // Adjusted the range
-    .paddingInner(0) // Removed inner padding
-    .paddingOuter(0); // Removed outer padding
+  // Build scales and axes
+  var x = d3.scaleBand().domain(myGroups).range([0, width]).padding(0);
+  var y = d3.scaleBand().domain(myVars).range([height, 0]).padding(0);
 
-  // Build Y scales and axis:
-  var y = d3.scaleBand().domain(myVars).range([height, 0]).padding(0.05);
+  // Calculate the size of the squares based on the smaller dimension
+  const squareSize = 16;
 
-  // Calculate the maximum width of the y-axis labels before creating the SVG
+  // Adjust column and row width based on squareSize
+  x.range([0, myGroups.length * squareSize]).padding(0);
+  y.range([0, myVars.length * squareSize]).padding(0);
+
+  // Calculate the maximum width of the axis labels before creating the SVG
+  const xLabelWidth = d3.max(myGroups, function (varName) {
+    return getTextWidth(varName, "15px") + 15;
+  });
   const yLabelWidth = d3.max(myVars, function (varName) {
     return getTextWidth(varName, "15px") + 15;
   });
@@ -52,48 +55,54 @@ datasource.then(function (data) {
   var myColor = d3
     .scaleSequential()
     .interpolator(d3.interpolateRdYlGn)
-    .domain([0.8, 1]);
+    .domain([0.8, 1.001]);
 
   svg = d3
     .select("#heatmap-container")
     .html(null)
     .append("svg")
-    .attr("width", width + margin.left + margin.right + yLabelWidth) // Updated the width
-    .attr("height", height + margin.top + margin.bottom)
+    .attr(
+      "width",
+      myGroups.length * squareSize + margin.left + yLabelWidth + margin.right,
+    )
+    .attr(
+      "height",
+      myVars.length * squareSize + margin.top + xLabelWidth + margin.bottom,
+    )
     .append("g")
     .attr(
       "transform",
       "translate(" +
-        (margin.left + 2 * margin.right + yLabelWidth) +
+        (margin.left + yLabelWidth) +
         "," +
-        margin.top +
+        (margin.top + xLabelWidth) +
         ")",
-    ); // Updated the translation
+    );
 
   // Build Y scales and axis:
-  var y = d3.scaleBand().domain(myVars).range([height, 0]).padding(0.05);
-
-  // Build color scale
-  var myColor = d3
-    .scaleSequential()
-    .interpolator(d3.interpolateRdYlGn)
-    .domain([0.8, 1]);
+  var y = d3
+    .scaleBand()
+    .domain(myVars)
+    .range([myVars.length * squareSize, 0])
+    .padding(0);
 
   // Create a tooltip
   const tooltip = d3
     .select("#heatmap-container")
     .append("div")
-    .classed("tooltip", true);
+    .classed("tooltip", true)
+    .style("opacity", 0);
 
   // Add the adjusted x-axis with rotated labels
   svg
     .append("g")
     .style("font-size", 15)
-    .attr("transform", "translate(0, 0)") // Adjusted the translation
+    .attr("transform", "translate(0, 0)")
     .call(d3.axisTop(x).tickSize(0))
     .selectAll("text")
     .style("text-anchor", "end")
     .attr("dx", "-.8em")
+    .attr("dy", "0.5em")
     .attr("transform", "rotate(90)");
 
   // Add the adjusted y-axis
@@ -110,7 +119,7 @@ datasource.then(function (data) {
   svg
     .selectAll()
     .data(data, function (d) {
-      return d.columnid + ":" + d.variable;
+      return d.columnid + ":" + d.rowid;
     })
     .enter()
     .append("rect")
@@ -121,34 +130,34 @@ datasource.then(function (data) {
       return d.rowid;
     })
     .attr("value", function (d) {
-      return d.value;
+      return Math.round(d.value * 1000000) / 1000000; // Round to 7 digits
     })
     .attr("x", function (d) {
-      return myGroups.length - x(d.columnid) - x.bandwidth();
-    }) // Adjusted x-coordinate
-    .attr("y", function (d) {
-      return y(d.rowid);
+      return x(d.columnid);
     })
+    .attr("y", function (d) {
+      return y(d.rowid) + (y.bandwidth() - squareSize) / 2; // Centering squares vertically
+    })
+    .attr("width", squareSize) // Set width to square size
+    .attr("height", squareSize) // Set height to square size
     .attr("rx", 4)
     .attr("ry", 4)
-    .attr("width", y.bandwidth()) // Set the width to match the height
-    .attr("height", y.bandwidth())
     .style("fill", function (d) {
       return myColor(d.value);
     })
     .style("stroke-width", 0)
     .style("stroke", "none")
-    .style("opacity", 0.8)
+    .style("opacity", 1)
     .on("mouseover", function (e) {
       const [mouseX, mouseY] = d3.pointer(e);
       const rect = d3.select(this);
+      rect.style("fill", "grey");
       tooltip
         .style("opacity", 1)
         .style("background-color", myColor(rect.attr("value")))
         .html(rect.attr("rowid") + ": " + rect.attr("value"))
-        .style("right", mouseX + "px")
-        // .style("left", (mouseX + (yLabelWidth / 3)) + "px")
-        .style("top", mouseY + 100 + "px");
+        .style("left", mouseX + squareSize + margin.left + yLabelWidth + "px")
+        .style("top", mouseY + squareSize + margin.top + xLabelWidth + "px");
     })
     .on("mousemove", function (e) {
       const [mouseX, mouseY] = d3.pointer(e);
@@ -156,11 +165,13 @@ datasource.then(function (data) {
       tooltip
         .html(rect.attr("rowid") + ": " + rect.attr("value"))
         .style("opacity", 1)
-        .style("right", mouseX + "px")
-        // .style("left", (mouseX + (yLabelWidth / 3)) + "px")
-        .style("top", mouseY + 100 + "px");
+        .style("left", mouseX + squareSize + margin.left + yLabelWidth + "px")
+        .style("top", mouseY + margin.top + xLabelWidth + "px");
     })
     .on("mouseleave", function (d) {
+      d3.select(this).style("fill", function (d) {
+        return myColor(d.value);
+      });
       tooltip.style("opacity", 0);
     });
 
@@ -168,16 +179,18 @@ datasource.then(function (data) {
   svg
     .append("text")
     .attr("x", -yLabelWidth)
-    .attr("y", -50)
+    .attr("y", -(xLabelWidth + 50))
     .attr("text-anchor", "left")
     .style("font-size", "22px")
     .text("C-PAC regression test correlations");
 
   // Add subtitle to graph
   svg
+    .append("a")
+    .attr("xlink:href", `https://github.com/FCP-INDI/C-PAC/tree/${dataSha}`)
     .append("text")
     .attr("x", -yLabelWidth)
-    .attr("y", -20)
+    .attr("y", -(xLabelWidth + 20))
     .attr("text-anchor", "left")
     .style("font-size", "14px")
     .style("fill", "grey")
