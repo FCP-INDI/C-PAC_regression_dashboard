@@ -49,7 +49,7 @@ def parse_yaml(directory: str, pipeline_name: str) -> _PIPELINE_DICT:
             paths[f"{subdir}_dir"] = os.path.join(directory, subdir)
         else:
             paths[f"{subdir}_dir"] = None
-    assert isinstance(paths["log_dir"], str)
+    assert isinstance(paths["log_dir"], str), f"log_dir: {paths['log_dir']}"
     log_dir: Optional[str] = get_dir(paths["log_dir"])
 
     if log_dir is not None:
@@ -57,9 +57,9 @@ def parse_yaml(directory: str, pipeline_name: str) -> _PIPELINE_DICT:
             for file in files:
                 if file.endswith("Z.yml"):
                     pipeline_config = os.path.join(root, file)
-    assert isinstance(paths["working_dir"], str)
+    assert isinstance(paths["working_dir"], str), f"working_dir: {paths['working_dir']}"
     working_dir = get_dir(paths["working_dir"])
-    assert isinstance(paths["output_dir"], str)
+    assert isinstance(paths["output_dir"], str), f"output_dir: {paths['output_dir']}"
     output_dir = get_dir(paths["output_dir"])
 
     return write_pipeline_yaml(
