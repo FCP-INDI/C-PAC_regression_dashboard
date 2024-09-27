@@ -151,15 +151,22 @@ async def get_heatmap() -> str:
     """Get a heatmap image."""
     url = f"https://{_ENV.testing_owner}.github.io/dashboard/?data_sha={_ENV.sha}"
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
-        await page.goto(url, wait_until="networkidle")
-        svg_string = await page.evaluate(
-            """() => {
-            let svg = document.querySelector('svg');
-            return svg ? svg.outerHTML : null;
-        }"""
-        )
+        try:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await page.goto(url, wait_until="networkidle")
+            svg_string = await page.evaluate(
+                """() => {
+    let svg = document.querySelector('svg');
+    return svg ? svg.outerHTML : null;
+}"""
+            )
+        except Exception as exception:
+            from warnings import warn
+
+            warn(
+                f"{exception}\n\nAre playwright and chromium installed?", RuntimeWarning
+            )
         if svg_string is not None:
             _heatmap = Heatmap("heatmap", svg_string)
             add_heatmap_to_branch(_heatmap)
