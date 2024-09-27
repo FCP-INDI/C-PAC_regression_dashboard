@@ -15,7 +15,7 @@ python = ">=3.9"
 cairosvg = "*"
 gitpython = "*"
 PyGithub = "*"
-pyppeteer = "*"
+playwright = "*"
 cpac-correlations = {git = "https://github.com/FCP-INDI/CPAC_regtest_pack.git", subdirectory = "cpac_correlations", branch = "correlate_from_python"}
 
 [tool.poetry.group.dev.dependencies]

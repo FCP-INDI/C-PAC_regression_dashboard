@@ -13,7 +13,7 @@ from typing import Generator
 from cairosvg import svg2png
 from git import Repo
 from github import Github
-from pyppeteer import launch
+from playwright.async_api import async_playwright
 
 from ._version import __version__
 
@@ -150,26 +150,30 @@ async def generate_comment(path: Path) -> str:
 async def get_heatmap() -> str:
     """Get a heatmap image."""
     url = f"https://{_ENV.testing_owner}.github.io/dashboard/?data_sha={_ENV.sha}"
-    browser = await launch()
-    page = await browser.newPage()
-    await page.goto(url, waitUntil="networkidle0")
-    svg_string = await page.evaluate(
-        """() => {
-        let svg = document.querySelector('svg');
-        return svg ? svg.outerHTML : null;
-    }"""
-    )
-    if svg_string is not None:
-        _heatmap = Heatmap("heatmap", svg_string)
-        add_heatmap_to_branch(_heatmap)
-        heatmap = _raw_image_path(
-            _ENV.testing_owner, _ENV.repo, _ENV.sha, Path(f"{_heatmap.filename}.png")
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        await page.goto(url, wait_until="networkidle")
+        svg_string = await page.evaluate(
+            """() => {
+            let svg = document.querySelector('svg');
+            return svg ? svg.outerHTML : null;
+        }"""
         )
-        heatmap = f"[![heatmap]({heatmap})]({url})"
-    else:
-        heatmap = ""
+        if svg_string is not None:
+            _heatmap = Heatmap("heatmap", svg_string)
+            add_heatmap_to_branch(_heatmap)
+            heatmap = _raw_image_path(
+                _ENV.testing_owner,
+                _ENV.repo,
+                _ENV.sha,
+                Path(f"{_heatmap.filename}.png"),
+            )
+            heatmap = f"[![heatmap]({heatmap})]({url})"
+        else:
+            heatmap = ""
 
-    await browser.close()
+        await browser.close()
     return heatmap
 
 
