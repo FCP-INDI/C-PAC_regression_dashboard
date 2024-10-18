@@ -58,14 +58,18 @@ def add_heatmap_to_branch(file: Heatmap) -> None:
     -------
     None
     """
-    personal_access_token = os.environ.get("GITHUB_TOKEN")
-    g = Github(personal_access_token)
+    g = Github(_ENV.github_token)
     repo = g.get_repo(f"{_ENV.testing_owner}/regtest-runlogs")
     branch_name = f"{_ENV.repo}_{_ENV.sha}"
     with tempfile.TemporaryDirectory() as _temp_dir:
         temp_dir = Path(_temp_dir)
         local_repo = Repo.clone_from(
-            repo.clone_url, temp_dir, branch=branch_name, depth=1
+            repo.clone_url.replace(
+                "https://", f"https://${_ENV.github_token}:x-oauth-basic@"
+            ),
+            temp_dir,
+            branch=branch_name,
+            depth=1,
         )
         svg_path = temp_dir / f"{file.filename}.svg"
         png_path = temp_dir / f"{file.filename}.png"
