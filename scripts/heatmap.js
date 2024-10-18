@@ -187,7 +187,7 @@ datasource.then(function (data) {
   // Add subtitle to graph
   svg
     .append("a")
-    .attr("xlink:href", `https://github.com/FCP-INDI/C-PAC/commit/${dataSha}`)
+    .attr("href", `https://github.com/FCP-INDI/C-PAC/commit/${dataSha}`)
     .append("text")
     .attr("x", -yLabelWidth)
     .attr("y", -(xLabelWidth + 20))
