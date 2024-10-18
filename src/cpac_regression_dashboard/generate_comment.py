@@ -199,6 +199,7 @@ def main() -> None:
                 "comments and pull requests."
             )
             print("OWNER: The owner of the repository.")
+            print("PLAYWRIGHT_BROWSERS_PATH: The path for Playwright browsers.")
             print("REPO: The name of the repository.")
             print("SHA: The SHA of the commit.")
             print("TESTING_OWNER: The owner of the testing repository.")

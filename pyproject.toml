@@ -30,6 +30,7 @@ cpac_regsuite_correlate = 'cpac_regression_dashboard.calculate_correlations:main
 cpac_regsuite_create_yaml = 'cpac_regression_dashboard.create_yml:main'
 cpac_regsuite_create_yml = 'cpac_regression_dashboard.create_yml:main'
 cpac_regsuite_generate_comment = 'cpac_regression_dashboard.generate_comment:main'
+"cpac-regsuite-generate-comment" = 'cpac_regression_dashboard.generate_comment:main'
 
 [tool.poetry.urls]
 "Source Code" = "https://github.com/FCP-INDI/C-PAC_regression_dashboard"
