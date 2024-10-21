@@ -12,6 +12,7 @@ from typing import Generator
 
 from cairosvg import svg2png
 from git import Repo
+from git.exc import GitCommandError
 from github import Github
 from playwright.async_api import async_playwright
 
@@ -71,6 +72,9 @@ def add_heatmap_to_branch(file: Heatmap) -> None:
             branch=branch_name,
             depth=1,
         )
+        # make sure branch is up to date
+        local_repo.remotes.origin.fetch("+refs/heads/*:refs/remotes/origin/*")
+        local_repo.remotes.origin.pull(branch_name)
         svg_path = temp_dir / f"{file.filename}.svg"
         png_path = temp_dir / f"{file.filename}.png"
         with open(svg_path, "w") as _f:
@@ -78,7 +82,10 @@ def add_heatmap_to_branch(file: Heatmap) -> None:
         svg2png(background_color="white", url=str(svg_path), write_to=str(png_path))
         local_repo.index.add([png_path])
         local_repo.index.commit(":loud_sound: Add heatmap image")
-        local_repo.remotes.origin.push(branch_name)
+        try:
+            local_repo.remotes.origin.push(branch_name)
+        except GitCommandError:
+            local_repo.remotes.origin.push(branch_name, force=True)
 
 
 def gather_images(path: Path) -> Generator[Path, None, None]:
