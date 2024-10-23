@@ -6,15 +6,18 @@ from dataclasses import dataclass
 from importlib.metadata import metadata
 import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
-from typing import Generator
+from typing import Generator, Optional
 
 from cairosvg import svg2png
 from git import Repo
 from git.exc import GitCommandError
 from github import Github
+from github.Repository import Repository
 from playwright.async_api import async_playwright
+import requests
 
 from ._version import __version__
 
@@ -160,6 +163,9 @@ async def generate_comment(path: Path) -> str:
 
 async def get_heatmap() -> str:
     """Get a heatmap image."""
+    subprocess.run(
+        "playwright install chromium".split(" "), check=False
+    )  # update chromium
     url = f"https://{_ENV.testing_owner}.github.io/dashboard/?data_sha={_ENV.sha}"
     async with async_playwright() as p:
         try:
@@ -224,9 +230,35 @@ def main() -> None:
     asyncio.run(post_comment(path))
 
 
+def repost_comment_on_pull_request(
+    repo: Repository, comment: str, pr: dict[str, str]
+) -> None:
+    """Repost a commit comment on a PR containing that commit."""
+    pr_number = pr["number"]
+    issue = repo.get_issue(number=pr_number)
+    issue.create_comment(comment)
+
+
+def repost_comment_on_pull_requests(repo: Repository, comment: str) -> None:
+    """Repost a commit comment on all PR containing that commit."""
+    pr_url: str = f"https://api.github.com/repos/{_ENV.owner}/{_ENV.repo}/commits/{_ENV.sha}/pulls"
+    headers: dict[str, str] = {
+        "Authorization": f"Bearer {_ENV.github_token}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+
+    response: requests.Response = requests.get(pr_url, headers=headers)
+    success_response = 200
+    if response.status_code == success_response:
+        pull_requests: Optional[list[dict]] = response.json()
+        if pull_requests:
+            for pr in pull_requests:
+                repost_comment_on_pull_request(repo, comment, pr)
+
+
 async def post_comment(path: Path) -> None:
     """Post a comment on a GitHub commit and relevant PR."""
-    personal_access_token = os.environ.get("GITHUB_TOKEN")
+    personal_access_token = _ENV.github_token
     g = Github(personal_access_token)
     repo = g.get_repo(f"{_ENV.owner}/{_ENV.repo}")
     commit = repo.get_commit(_ENV.sha)

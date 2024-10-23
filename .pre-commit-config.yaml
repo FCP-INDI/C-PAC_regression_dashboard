@@ -19,6 +19,7 @@ repos:
   - id: mypy
     args: [--ignore-missing-imports]
     additional_dependencies:
+    - types-requests
     - types-toml
     - types-PyYAML
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
