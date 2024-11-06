@@ -69,7 +69,7 @@ def add_heatmap_to_branch(file: Heatmap) -> None:
         temp_dir = Path(_temp_dir)
         local_repo = Repo.clone_from(
             repo.clone_url.replace(
-                "https://", f"https://${_ENV.github_token}:x-oauth-basic@"
+                "https://", f"https://{_ENV.github_token}:x-oauth-basic@"
             ),
             temp_dir,
             branch=branch_name,
@@ -85,6 +85,7 @@ def add_heatmap_to_branch(file: Heatmap) -> None:
         svg2png(background_color="white", url=str(svg_path), write_to=str(png_path))
         local_repo.index.add([png_path])
         local_repo.index.commit(":loud_sound: Add heatmap image")
+
         try:
             local_repo.remotes.origin.push(branch_name)
         except GitCommandError:
