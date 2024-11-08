@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cpac_regression_dashboard"
-version = "1.0.0.dev1"
+version = "1.0.0"
 description = "Generate a dashboard for C-PAC regression tests"
 authors = [
   "Amy Gutierrez <58920810+amygutierrez@users.noreply.github.com>",
@@ -9,6 +9,7 @@ authors = [
 license = "LGPL-2.1"
 readme = "README.md"
 packages = [{from = "src", include = "cpac_regression_dashboard"}]
+repository = "https://github.com/FCP-INDI/C-PAC_regression_dashboard"
 
 [tool.poetry.dependencies]
 python = ">=3.9"
@@ -16,7 +17,7 @@ cairosvg = "*"
 gitpython = "*"
 PyGithub = "*"
 playwright = "*"
-cpac-correlations = {git = "https://github.com/FCP-INDI/CPAC_regtest_pack.git", subdirectory = "cpac_correlations", branch = "correlate_from_python"}
+cpac-correlations = {git = "https://github.com/FCP-INDI/CPAC_regtest_pack.git", subdirectory = "cpac_correlations", branch = "main"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"
@@ -31,9 +32,6 @@ cpac_regsuite_create_yaml = 'cpac_regression_dashboard.create_yml:main'
 cpac_regsuite_create_yml = 'cpac_regression_dashboard.create_yml:main'
 cpac_regsuite_generate_comment = 'cpac_regression_dashboard.generate_comment:main'
 "cpac-regsuite-generate-comment" = 'cpac_regression_dashboard.generate_comment:main'
-
-[tool.poetry.urls]
-"Source Code" = "https://github.com/FCP-INDI/C-PAC_regression_dashboard"
 
 [tool.pytest.ini_options]
 pythonpath = [

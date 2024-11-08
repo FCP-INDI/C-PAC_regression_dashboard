@@ -143,7 +143,7 @@ async def generate_comment(path: Path) -> str:
     project_urls = metadata(__package__).get_all("Project-URL", [])
     source_url = None
     for _url in project_urls:
-        if _url.startswith("Source Code, "):
+        if _url.startswith("Repository, "):
             source_url = _url.split(",")[1].strip()
             break
     if source_url is None:
