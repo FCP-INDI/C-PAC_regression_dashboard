@@ -1,31 +1,30 @@
+import json
 
-def dataset(name, data_source, value):
-    dataset = f"""
+
+def dataset(name: str, data_source: str, value: float | int | str) -> str:
+    return f"""
         {{
             "rowid": "{name}",
             "columnid": "{data_source}",
             "value": "{value}"
         }},
             """
-    return dataset
 
-def body(all_keys, data_source):
-    data_body = ''
+
+def body(all_keys: list[str], data_source: str) -> str:
+    data_body: str = "["
     for key in all_keys:
-        name_value = key.split(': ')
+        name_value = key.split(": ")
         name = name_value[0]
         value = name_value[1]
         data_body += dataset(name, data_source, value)
-    out = f"""
-        {{"data": [
-                {data_body}
-            ]}}
-            """
-    return data_body
+    data_body = data_body.strip()
+    data_body += "]"
+    return json.dumps(json.loads(data_body))
 
-def write_html(data_body):
-    script = \
-    f"""
+
+def write_html(data_body) -> str:
+    return f"""
     <html>
     <head>
         <title>Correlations</title>
@@ -90,17 +89,14 @@ def write_html(data_body):
             <div id="chart-container">Correlations heatmap will load here!</div>
         </body>
     </html>
-    """
+    """  # noqa: E501
 
-    return(script)
 
-def setup_browser(html_template):
+def setup_browser(html_template) -> None:
     import tempfile
     import webbrowser
 
-    with tempfile.NamedTemporaryFile(suffix='.html', delete=False) as temp_file:
-        temp_file.write(html_template.encode('utf-8'))
-        filename = 'file:///'+ temp_file.name
+    with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as temp_file:
+        temp_file.write(html_template.encode("utf-8"))
+        filename = "file:///" + temp_file.name
         webbrowser.open_new_tab(filename)
-    
-    return
