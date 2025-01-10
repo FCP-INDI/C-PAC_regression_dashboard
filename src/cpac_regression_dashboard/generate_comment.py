@@ -144,7 +144,7 @@ async def generate_comment(path: Path) -> str:
     project_urls = metadata(__package__).get_all("Project-URL", [])
     source_url = None
     for _url in project_urls:
-        if _url.startswith("Source Code, "):
+        if _url.startswith("Repository, "):
             source_url = _url.split(",")[1].strip()
             break
     if source_url is None:
@@ -168,6 +168,7 @@ async def get_heatmap() -> str:
         "playwright install chromium".split(" "), check=False
     )  # update chromium
     url = f"https://{_ENV.testing_owner}.github.io/dashboard/?data_sha={_ENV.sha}"
+    svg_string: Optional[str] = None
     async with async_playwright() as p:
         try:
             browser = await p.chromium.launch(headless=True)
@@ -185,7 +186,7 @@ async def get_heatmap() -> str:
             warn(
                 f"{exception}\n\nAre playwright and chromium installed?", RuntimeWarning
             )
-        if svg_string is not None:
+        if svg_string:
             _heatmap = Heatmap("heatmap", svg_string)
             add_heatmap_to_branch(_heatmap)
             heatmap = _raw_image_path(
