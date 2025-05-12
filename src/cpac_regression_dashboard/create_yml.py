@@ -2,7 +2,7 @@ import os
 
 import click
 
-from .utils.parse_yaml import cpac_yaml
+from cpac_regression_dashboard.utils.parse_yaml import cpac_yaml
 
 
 @click.command()

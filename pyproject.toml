@@ -1,10 +1,11 @@
 [tool.poetry]
 name = "cpac_regression_dashboard"
-version = "1.0.0"
+version = "1.0.1"
 description = "Generate a dashboard for C-PAC regression tests"
 authors = [
   "Amy Gutierrez <58920810+amygutierrez@users.noreply.github.com>",
-  "Jon Clucas <jon.clucas@childmind.org"
+  "Jon Clucas <jon.clucas@childmind.org",
+  "Tamsin Rogers <tamsin.rogers@childmind.org>"
 ]
 license = "LGPL-2.1"
 readme = "README.md"

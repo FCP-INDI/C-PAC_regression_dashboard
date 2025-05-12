@@ -19,7 +19,7 @@ from github.Repository import Repository
 from playwright.async_api import async_playwright
 import requests
 
-from ._version import __version__
+from cpac_regression_dashboard._version import __version__
 
 
 @dataclass

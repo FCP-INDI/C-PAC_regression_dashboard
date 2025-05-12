@@ -4,10 +4,10 @@ import json
 
 from cpac_correlations import cpac_correlations
 
-from .utils.html_script import body
+from cpac_regression_dashboard.utils.html_script import body
 
 
-def main() -> None:  # noqa: D103
+def main() -> None:
     """Gather correlation coefficients and write them to D3-readable JSON."""
     all_keys, data_source, branch = cpac_correlations()
     html_body = body(all_keys, data_source)

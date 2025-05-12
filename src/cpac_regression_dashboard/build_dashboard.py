@@ -2,7 +2,7 @@ import os
 
 import click
 
-from .utils.html_script import setup_browser, write_html
+from cpac_regression_dashboard.utils.html_script import setup_browser, write_html
 
 
 def process_option(ctx, param, value):
