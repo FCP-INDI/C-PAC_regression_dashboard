@@ -3,6 +3,49 @@
 
 This Github repo develops a report dashbaord on the automated regression tests from the repo <a href="https://github.com/cmi-dair/slurm_testing">slurm_testing</a>. This automated regression testing repo is specifically made for testing <a href="https://github.com/FCP-INDI">C-PAC</a>. Currently, the regression test only runs default pipeline.
 
+<b> General </b>
+=======================================================
+- `pyproject.toml` commands must be run from one level above `src`
+- Available commands:
+  - `cpac_regsuite_create_yaml`
+  - `cpac_regsuite_correlate`
+  - `cpac_regsuite_generate_comment`
+
+
+<b> Steps </b>
+=======================================================
+
+<b>1) Create Virtual Environment</b>
+------------------------
+- Any Python >= 3.9 should work
+- <b>Command:</b> `uv venv --python 3.11 $FOLDER`
+
+<b>2) Activate Virtual Environment</b>
+------------------------
+- <b>Command:</b> `source $FOLDER/bin/activate`
+
+<b>3) Install Dashboard Repo</b>
+------------------------
+- <b>Command:</b> `uv pip install git+https://github.com/FCP-INDI/C-PAC_regression_dashboard.git`
+
+<b>4) Create comparison YAML</b>
+------------------------
+- <b>Command:</b> `cpac_regsuite_create_yaml --pipeline1 OUTPUT-FOLDER_A --pipeline2 $OUTPUT_FOLDER_B --workspace KKI --branch {branch_name} --data_source {data_source}`
+- `{branch_name}` and `{data_source}` can really be anything, they are mainly used to specify the exact pipeline output versions you are working with, in order to avoid confusion
+- Output folders should be subject level, i.e. /`ocean/projects/med250004p/shared/regression_outputs_v1.8.7/ccs-options/KKI/sub-3884955` & `/ocean/projects/med250004p/shared/regression_outputs_v1.8.8/ccs-options/KKI/sub-3884955`
+- <b>Output:</b>  `{branch_name}_{data_source}.yml` in the current working directory
+
+<b>5) Calculate Correlations</b>
+------------------------
+- <b>Command:</b> `cpac_regsuite_correlate {branch_name}_{data_source}.yml`
+- <b>Output:</b> `correlations/correlations.json` in the current working directory
+
+<b>6) Build HTML Dashboard</b>
+------------------------
+- <b>Command:</b> `python3 build_d3_dashboard.py --json_file correlations.json --branch {branch_name}`
+- <b>Output:</b> `correlations.json.html` in the current working directory
+
+
 <b> Scripts </b>
 =======================================================
 
