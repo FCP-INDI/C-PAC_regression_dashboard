@@ -30,8 +30,8 @@ This Github repo develops a report dashbaord on the automated regression tests f
 
 <b>4) Create comparison YAML</b>
 ------------------------
-- <b>Command:</b> `cpac_regsuite_create_yaml --pipeline1 OUTPUT-FOLDER_A --pipeline2 $OUTPUT_FOLDER_B --workspace KKI --branch {branch_name} --data_source {data_source}`
-- `{branch_name}` and `{data_source}` can really be anything, they are mainly used to specify the exact pipeline output versions you are working with, in order to avoid confusion
+- <b>Command:</b> `cpac_regsuite_create_yaml --pipeline1 OUTPUT-FOLDER_A --pipeline2 $OUTPUT_FOLDER_B --workspace {workspace_name} --branch {branch_name} --data_source {data_source}`
+- `{workspace_name}`, `{branch_name}` and `{data_source}` can really be anything, they are mainly used to specify the exact pipeline output versions you are working with, in order to avoid confusion
 - Output folders should be subject level, i.e. /`ocean/projects/med250004p/shared/regression_outputs_v1.8.7/ccs-options/KKI/sub-3884955` & `/ocean/projects/med250004p/shared/regression_outputs_v1.8.8/ccs-options/KKI/sub-3884955`
 - <b>Output:</b>  `{branch_name}_{data_source}.yml` in the current working directory
 
