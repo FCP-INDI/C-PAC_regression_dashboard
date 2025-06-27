@@ -51,7 +51,7 @@ def parse_yaml(directory: str, pipeline_name: str) -> _PIPELINE_DICT:
             paths[f"{subdir}_dir"] = None
     assert isinstance(paths["log_dir"], str), f"log_dir: {paths['log_dir']}"
     log_dir: Optional[str] = get_dir(paths["log_dir"])
-
+    pipeline_config = None
     if log_dir is not None:
         for root, _dirs, files in os.walk(paths["log_dir"]):
             for file in files:
