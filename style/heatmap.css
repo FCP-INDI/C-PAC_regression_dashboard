@@ -6,4 +6,37 @@
   padding: 5px;
   pointer-events: none;
   z-index: 10;
+  max-width: 300px;
+  white-space: normal;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.tooltip span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #666;
+}
+
+.tooltip a {
+  color: #3366cc;
+  text-decoration: underline;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.low-correlation {
+  animation: pulse 1s infinite;
 }

@@ -101,15 +101,25 @@ d3.json(dataUrl).then(function (allData) {
       .attr("columnid", (d) => d.columnid)
       .attr("rowid", (d) => d.rowid)
       .style("fill", (d) => myColor(d.value))
+      .attr("class", (d) => (d.value < 0.2 ? "low-correlation" : null))
       .style("stroke", "none")
-      .on("mouseover", function (e) {
+      .on("mouseover", function (e, d) {
         const [mouseX, mouseY] = d3.pointer(e);
         const rect = d3.select(this);
         rect.style("fill", "grey");
+
+        const value = +rect.attr("value");
+        let tooltipContent = `<strong>${rect.attr("rowid")}</strong>: ${value}`;
+
+        if (value < 0.2) {
+          document.getElementById("weird-bird").play();
+          tooltipContent += `<br><span style="font-size: 10px; color: lightgrey;">alert sound: <a href="https://freesound.org/people/Reitanna/sounds/343993/" target="_blank" rel="noopener noreferrer" style="color: lightblue;">"weird bird.wav" by Reitanna Seishin</a></span>`;
+        }
+
         tooltip
+          .html(tooltipContent)
           .style("opacity", 1)
-          .style("background-color", myColor(rect.attr("value")))
-          .html(rect.attr("rowid") + ": " + rect.attr("value"))
+          .style("background-color", myColor(value))
           .style("left", mouseX + squareSize + margin.left + yLabelWidth + "px")
           .style("top", mouseY + squareSize + margin.top + xLabelWidth + "px");
       })
