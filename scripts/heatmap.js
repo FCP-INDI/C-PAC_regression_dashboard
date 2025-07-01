@@ -109,11 +109,11 @@ d3.json(dataUrl).then(function (allData) {
         rect.style("fill", "grey");
 
         const value = +rect.attr("value");
-        let tooltipContent = `<strong>${rect.attr("rowid")}</strong>: ${value}`;
+        const tooltipContent = `<strong>${rect.attr("rowid")}</strong>: ${value}`;
 
         if (value < 0.2) {
           document.getElementById("weird-bird").play();
-          tooltipContent += `<br><span style="font-size: 10px; color: lightgrey;">alert sound: <a href="https://freesound.org/people/Reitanna/sounds/343993/" target="_blank" rel="noopener noreferrer" style="color: lightblue;">"weird bird.wav" by Reitanna Seishin</a></span>`;
+          document.getElementById("attribution").style.display = "block";
         }
 
         tooltip
