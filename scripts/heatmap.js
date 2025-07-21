@@ -25,6 +25,14 @@ d3.json(dataUrl).then(function (allData) {
 
   const container = d3.select("#heatmap-container").html(null);
 
+  const tooltip = d3
+    .select("body")
+    .append("div")
+    .classed("tooltip", true)
+    .style("opacity", 0)
+    .style("position", "absolute")
+    .style("pointer-events", "none");
+
   grouped.forEach((data, preconfig) => {
     data.sort((a, b) => d3.descending(a.rowid, b.rowid));
     const myGroups = Array.from(d3.group(data, (d) => d.columnid).keys());
@@ -59,11 +67,6 @@ d3.json(dataUrl).then(function (allData) {
       .scaleSequential()
       .interpolator(d3.interpolateRdYlGn)
       .domain([0.8, 1.001]);
-
-    const tooltip = container
-      .append("div")
-      .classed("tooltip", true)
-      .style("opacity", 0);
 
     // Axes
     svg
@@ -109,7 +112,6 @@ d3.json(dataUrl).then(function (allData) {
         rect.style("fill", "grey");
 
         const value = +rect.attr("value");
-        const tooltipContent = `<strong>${rect.attr("rowid")}</strong>: ${value}`;
 
         if (value < 0.2) {
           document.getElementById("weird-bird").play();
@@ -120,8 +122,8 @@ d3.json(dataUrl).then(function (allData) {
           .html(tooltipContent)
           .style("opacity", 1)
           .style("background-color", myColor(value))
-          .style("left", mouseX + squareSize + margin.left + yLabelWidth + "px")
-          .style("top", mouseY + squareSize + margin.top + xLabelWidth + "px");
+          .style("left", e.pageX + 10 + "px")
+          .style("top", e.pageY + 10 + "px");
       })
       .on("mousemove", function (e) {
         const [mouseX, mouseY] = d3.pointer(e);
@@ -129,8 +131,8 @@ d3.json(dataUrl).then(function (allData) {
         tooltip
           .html(rect.attr("rowid") + ": " + rect.attr("value"))
           .style("opacity", 1)
-          .style("left", mouseX + squareSize + margin.left + yLabelWidth + "px")
-          .style("top", mouseY + margin.top + xLabelWidth + "px");
+          .style("left", e.pageX + 10 + "px")
+          .style("top", e.pageY + 10 + "px");
       })
       .on("mouseleave", function (d) {
         d3.select(this).style("fill", (d) => myColor(d.value));
