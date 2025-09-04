@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cpac_regression_dashboard"
-version = "1.0.1"
+version = "1.0.2"
 description = "Generate a dashboard for C-PAC regression tests"
 authors = [
   "Amy Gutierrez <58920810+amygutierrez@users.noreply.github.com>",

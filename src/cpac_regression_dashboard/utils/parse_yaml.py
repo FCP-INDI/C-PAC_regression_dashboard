@@ -9,8 +9,11 @@ _PIPELINE_DICT = dict[Optional[str], dict[str, Optional[int | str]]]
 _FULL_YAML_DICT = dict[str, dict[str, bool | int | Optional[str]] | _PIPELINE_DICT]
 
 
-def get_dir(paths: str) -> Optional[str]:
+def get_dir(paths: Optional[str], variable_name: str = "dir") -> Optional[str]:
     """Get the full path to a ``pipeline_*`` directory."""
+    if paths is None:
+        return None
+    assert isinstance(paths, str), f"{variable_name}: {paths}"
     directory = paths
     if directory:
         for root, dirs, files in os.walk(paths):
@@ -49,18 +52,15 @@ def parse_yaml(directory: str, pipeline_name: str) -> _PIPELINE_DICT:
             paths[f"{subdir}_dir"] = os.path.join(directory, subdir)
         else:
             paths[f"{subdir}_dir"] = None
-    assert isinstance(paths["log_dir"], str), f"log_dir: {paths['log_dir']}"
-    log_dir: Optional[str] = get_dir(paths["log_dir"])
+    log_dir = get_dir(paths["log_dir"], "log_dir")
     pipeline_config = None
     if log_dir is not None:
-        for root, _dirs, files in os.walk(paths["log_dir"]):
+        for root, _dirs, files in os.walk(log_dir):
             for file in files:
                 if file.endswith("Z.yml"):
                     pipeline_config = os.path.join(root, file)
-    assert isinstance(paths["working_dir"], str), f"working_dir: {paths['working_dir']}"
-    working_dir = get_dir(paths["working_dir"])
-    assert isinstance(paths["output_dir"], str), f"output_dir: {paths['output_dir']}"
-    output_dir = get_dir(paths["output_dir"])
+    working_dir = get_dir(paths["working_dir"], "working_dir")
+    output_dir = get_dir(paths["output_dir"], "output_dir")
 
     return write_pipeline_yaml(
         output_dir, working_dir, log_dir, pipeline_config, pipeline_name
